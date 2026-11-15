@@ -1,170 +1,65 @@
-{% extends "base.html" %}
-
-{% block titulo %}Boletos - Reserva temporal{% endblock %}
-
-{% block contenido %}
-<main
-  class="contenedor principal"
-  id="aplicacion"
-  data-reserva-segundos="{{ reserva_segundos }}"
->
-  <section class="panel introduccion">
-    <div>
-      <p class="etiqueta">Idea de la practica</p>
-      <h2>Disponible - Reservado - Comprado</h2>
-      <p class="sin-margen">
-        Al agregar un boleto al carrito se aparta durante
-        <strong>{{ reserva_segundos }} segundos</strong>. Otra persona lo vera
-        como reservado y no podra seleccionarlo.
-      </p>
-    </div>
-    <button class="boton secundario" id="btnSemilla" type="button">
-      Cargar 6 boletos de ejemplo
-    </button>
-  </section>
-
-  <section class="panel identidad">
-    <div>
-      <p class="etiqueta">Usuario de esta ventana</p>
-      <h2>Identidad para la demostracion</h2>
-      <p class="ayuda sin-margen">
-        Abra otra ventana de incognito y escriba otro nombre para simular un
-        segundo comprador.
-      </p>
-    </div>
-    <div class="identidad-controles">
-      <label>
-        Nombre del comprador
-        <input
-          id="clienteNombre"
-          type="text"
-          maxlength="40"
-          value="Comprador 1"
-        >
-      </label>
-      <div class="identificador">
-        ID: <strong id="clienteIdCorto"></strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="resumen" aria-label="Resumen de boletos">
-    <article class="tarjeta-resumen disponible">
-      <span>Disponibles</span>
-      <strong id="totalDisponibles">0</strong>
-    </article>
-    <article class="tarjeta-resumen reservado">
-      <span>Reservados</span>
-      <strong id="totalReservados">0</strong>
-    </article>
-    <article class="tarjeta-resumen comprado">
-      <span>Comprados</span>
-      <strong id="totalComprados">0</strong>
-    </article>
-    <article class="tarjeta-resumen total">
-      <span>Total</span>
-      <strong id="totalBoletos">0</strong>
-    </article>
-  </section>
-
-  <div id="mensaje" class="mensaje oculto" role="status"></div>
-
-  <section class="dos-columnas">
-    <article class="panel">
-      <div class="titulo-panel">
-        <div>
-          <p class="etiqueta">CRUD</p>
-          <h2 id="tituloFormulario">Crear boleto</h2>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dreamy Coffee - Inicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('inicio') }}">Dreamy Coffee</a>
+            <div class="d-flex">
+                <a href="{{ url_for('menu') }}" class="btn btn-outline-light me-2">Menú Completo</a>
+                <a href="{{ url_for('ver_carrito') }}" class="btn btn-warning">
+                    Carrito ({{ cantidad_carrito }})
+                </a>
+            </div>
         </div>
-        <button
-          id="btnCancelarEdicion"
-          class="boton enlace oculto"
-          type="button"
-        >
-          Cancelar edicion
-        </button>
-      </div>
+    </nav>
 
-      <form id="formBoleto" class="formulario">
-        <input id="boletoId" type="hidden">
+    <div class="container mt-5">
+        <h1 class="mb-4">Bienvenido a Dreamy Coffee</h1>
 
-        <label>
-          Evento
-          <input id="evento" type="text" maxlength="80" required>
-        </label>
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-        <div class="campos-dobles">
-          <label>
-            Zona
-            <input id="zona" type="text" maxlength="40" required>
-          </label>
-          <label>
-            Asiento
-            <input id="asiento" type="text" maxlength="20" required>
-          </label>
+        <h3 class="mb-3">Nuestros Productos Destacados</h3>
+        <div class="row">
+            {% for producto in productos %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ producto.nombre }}</h5>
+                        <p class="card-text">Precio: <strong>${{ producto.precio }}</strong></p>
+                        <p class="card-text">
+                            Disponibles: <span class="badge bg-info text-dark">{{ producto.disponibles }}</span>
+                        </p>
+
+                        <div class="mt-auto">
+                            {% if producto.disponibles > 0 %}
+                                <form action="{{ url_for('agregar_carrito', producto_id=producto._id) }}" method="POST">
+                                    <button type="submit" class="btn btn-primary w-100">Reservar / Agregar</button>
+                                </form>
+                            {% else %}
+                                <button class="btn btn-secondary w-100" disabled>Sin disponibilidad temporal</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+                <p class="text-muted">No hay productos registrados todavía.</p>
+            {% endfor %}
         </div>
-
-        <label>
-          Precio
-          <input id="precio" type="number" min="0" step="0.01" required>
-        </label>
-
-        <button class="boton primario ancho" type="submit">
-          <span id="textoGuardar">Guardar boleto</span>
-        </button>
-      </form>
-    </article>
-
-    <article class="panel carrito">
-      <div class="titulo-panel">
-        <div>
-          <p class="etiqueta naranja">Mi carrito</p>
-          <h2>Reservas de esta ventana</h2>
-        </div>
-      </div>
-      <div id="listaCarrito" class="lista-carrito"></div>
-    </article>
-  </section>
-
-  <section class="panel seccion-lista">
-    <div class="titulo-panel lista-encabezado">
-      <div>
-        <p class="etiqueta">Consulta en tiempo real</p>
-        <h2>Boletos registrados</h2>
-      </div>
-      <div class="acciones-superiores">
-        <select id="filtroEstado" aria-label="Filtrar por estado">
-          <option value="todos">Todos los estados</option>
-          <option value="disponible">Disponibles</option>
-          <option value="reservado">Reservados</option>
-          <option value="comprado">Comprados</option>
-        </select>
-        <button class="boton secundario" id="btnActualizar" type="button">
-          Actualizar
-        </button>
-      </div>
     </div>
-
-    <div class="tabla-contenedor">
-      <table>
-        <thead>
-          <tr>
-            <th>Evento</th>
-            <th>Zona</th>
-            <th>Asiento</th>
-            <th>Precio</th>
-            <th>Estado</th>
-            <th>Tiempo / propietario</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaBoletos"></tbody>
-      </table>
-    </div>
-  </section>
-</main>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
-{% endblock %}
+</body>
+</html>

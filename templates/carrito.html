@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carrito - Dreamy Coffee</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Tu Carrito de Compras</h1>
+        <a href="{{ url_for('menu') }}" class="btn btn-secondary mb-3">Volver al Menú</a>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if vence_en %}
+        <div class="alert alert-warning">
+            <strong id="contador" data-vence="{{ vence_en.isoformat() }}">
+                Reserva activa
+            </strong>
+        </div>
+        {% endif %}
+
+        {% if productos %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in productos %}
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td>${{ item.precio }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.subtotal }}</td>
+                        <td>
+                            <form action="{{ url_for('eliminar_carrito', producto_id=item.id) }}" method="POST">
+                                <button type="submit" class="btn btn-danger btn-sm">Cancelar / Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h3>Total: ${{ total }}</h3>
+            
+            <button class="btn btn-success mt-3">Finalizar Compra</button>
+        {% else %}
+            <p class="text-muted">Tu carrito está vacío o tu reserva ha expirado.</p>
+        {% endif %}
+    </div>
+
+    <script>
+    const contador = document.getElementById("contador");
+    if (contador) {
+        const limite = new Date(contador.dataset.vence).getTime();
+        const reloj = setInterval(() => {
+            const faltan = Math.max(0, limite - Date.now());
+            const min = String(Math.floor(faltan / 60000)).padStart(2, "0");
+            const seg = String(Math.floor((faltan % 60000) / 1000)).padStart(2, "0");
+            contador.textContent = `Tiempo restante: ${min}:${seg}`;
+            if (faltan === 0) {
+                clearInterval(reloj);
+                location.reload();
+            }
+        }, 1000);
+    }
+    </script>
+</body>
+</html>
